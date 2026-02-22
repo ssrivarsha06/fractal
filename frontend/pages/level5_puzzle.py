@@ -44,11 +44,13 @@ def _render_register_complete():
     col_b, _, col_d = st.columns([1, 2, 1])
     with col_b:
         if st.button("← BACK", key="l5_back_reg"):
-            st.session_state.step = 2; st.rerun()
+            st.session_state.step = 2
+            st.rerun()
     with col_d:
         if st.button("COMPLETE REGISTRATION ✓", use_container_width=True):
             st.success("🎉 Account created! Switch to LOGIN to authenticate.")
-            import time; time.sleep(1.2)
+            import time
+            time.sleep(1.2)
             st.session_state.mode            = "login"
             st.session_state.step            = 1
             st.session_state.fractal_markers = []
@@ -73,14 +75,15 @@ def _render_login_puzzle():
     if risk.get("error"):
         st.error("Risk assessment failed. Please try again.")
         if st.button("RETRY"):
-            st.session_state.risk_result = {}; st.rerun()
+            st.session_state.risk_result = {}
+            st.rerun()
         return
 
     _risk_panel(risk)
     _sierpinski()
 
     # ── Puzzle ────────────────────────────────────────────────────────────
-    puzzle = risk.get("puzzle", {})
+    puzzle     = risk.get("puzzle", {})
     difficulty = risk.get("difficulty", "easy")
     badge_color = "#00ff88" if difficulty == "easy" else "#ff6b35"
 
@@ -95,7 +98,7 @@ def _render_login_puzzle():
     <div style="border-left:3px solid #00d4ff;padding:11px 14px;
                 background:rgba(0,212,255,0.04);margin-bottom:14px;
                 font-family:'Orbitron',monospace;font-size:0.8rem;color:#00d4ff;">
-      {puzzle.get('question','Loading…')}
+      {puzzle.get('question', 'Loading…')}
     </div>
     """, unsafe_allow_html=True)
 
@@ -104,9 +107,11 @@ def _render_login_puzzle():
         choice = st.radio("SELECT YOUR ANSWER:", options, key="pz_ans",
                           label_visibility="visible")
         if puzzle.get("fractal_hint"):
-            st.markdown(f'<div style="font-family:Share Tech Mono,monospace;font-size:0.67rem;'
-                        f'color:#4a7a9b;margin-top:6px;">💡 {puzzle["fractal_hint"]}</div>',
-                        unsafe_allow_html=True)
+            st.markdown(
+                f'<div style="font-family:Share Tech Mono,monospace;font-size:0.67rem;'
+                f'color:#4a7a9b;margin-top:6px;">💡 {puzzle["fractal_hint"]}</div>',
+                unsafe_allow_html=True,
+            )
 
         col_b, _, col_v = st.columns([1, 2, 1])
         with col_b:
@@ -127,51 +132,59 @@ def _run_risk_assessment():
     beh      = st.session_state.get("behavior_data", {})
     hour     = datetime.now().hour
     try:
-        r = requests.post(f"{API_URL}/login/risk-assessment", json={{
-            "username":   username,
-            "behavior": {{
-                "username":         username,
-                "mouse_speeds":     beh.get("mouse_speeds",    [0.3, 0.25, 0.28]),
-                "pause_durations":  beh.get("pause_durations", [800, 1000, 600]),
-                "click_count":      beh.get("click_count",     3),
-                "zoom_count":       beh.get("zoom_count",      1),
-                "fractal_time_ms":  beh.get("fractal_time_ms", 6000.0),
-                "action_intervals": beh.get("action_intervals",[]),
-            }},
-            "ip_address": "192.168.1.1",
-            "user_agent": "Streamlit",
-            "login_hour": hour,
-        }}, timeout=10)
+        r = requests.post(
+            f"{API_URL}/login/risk-assessment",
+            json={
+                "username": username,
+                "behavior": {
+                    "username":         username,
+                    "mouse_speeds":     beh.get("mouse_speeds",    [0.3, 0.25, 0.28]),
+                    "pause_durations":  beh.get("pause_durations", [800, 1000, 600]),
+                    "click_count":      beh.get("click_count",     3),
+                    "zoom_count":       beh.get("zoom_count",      1),
+                    "fractal_time_ms":  beh.get("fractal_time_ms", 6000.0),
+                    "action_intervals": beh.get("action_intervals", []),
+                },
+                "ip_address": "192.168.1.1",
+                "user_agent": "Streamlit",
+                "login_hour": hour,
+            },
+            timeout=10,
+        )
         if r.status_code == 200:
             st.session_state.risk_result = r.json()
         else:
-            st.error(r.json().get("detail","Risk assessment failed"))
-            st.session_state.risk_result = {{"error": True}}
+            st.error(r.json().get("detail", "Risk assessment failed"))
+            st.session_state.risk_result = {"error": True}
     except Exception as e:
-        st.error(f"Backend error: {{e}}")
-        st.session_state.risk_result = {{"error": True}}
+        st.error(f"Backend error: {e}")
+        st.session_state.risk_result = {"error": True}
 
 
 def _verify(answer: str):
     username = st.session_state.username
     try:
-        r = requests.post(f"{{API_URL}}/login/verify-puzzle",
-                          json={{"username": username, "answer": answer}}, timeout=8)
+        r = requests.post(
+            f"{API_URL}/login/verify-puzzle",
+            json={"username": username, "answer": answer},
+            timeout=8,
+        )
         if r.status_code == 200:
             st.success("✅ Authentication complete!")
-            import time; time.sleep(0.6)
+            import time
+            time.sleep(0.6)
             st.session_state.auth_complete = True
             st.rerun()
         else:
-            st.error(r.json().get("detail","Incorrect answer — try again"))
+            st.error(r.json().get("detail", "Incorrect answer — try again"))
     except Exception as e:
-        st.error(f"Backend error: {{e}}")
+        st.error(f"Backend error: {e}")
 
 
 def _risk_panel(risk: dict):
-    b = risk.get("behavioral_risk",  0)
-    c = risk.get("contextual_risk",  0)
-    t = risk.get("composite_risk",   0)
+    b  = risk.get("behavioral_risk",  0)
+    c  = risk.get("contextual_risk",  0)
+    t  = risk.get("composite_risk",   0)
     lv = risk.get("risk_level", "LOW")
     col = "#00ff88" if t < 30 else "#ff6b35" if t < 60 else "#ff3366"
 
@@ -199,18 +212,22 @@ def _risk_panel(risk: dict):
     </div>
     """, unsafe_allow_html=True)
 
-    all_logs = risk.get("behavioral_logs",[]) + risk.get("contextual_logs",[])
+    all_logs = risk.get("behavioral_logs", []) + risk.get("contextual_logs", [])
     if all_logs:
         with st.expander("🖥 BACKGROUND ANALYSIS LOG"):
             html = ""
             for log in all_logs:
-                lv2 = log.get("level","OK")
-                c2  = "#ff3366" if lv2=="RISK" else "#ff6b35" if lv2=="WARN" else "#00ff88"
-                html += (f'<div style="font-family:Share Tech Mono,monospace;font-size:0.63rem;'
-                         f'color:{c2};margin:2px 0;">[{lv2}] {log["msg"]}</div>')
-            st.markdown(f'<div style="background:rgba(0,0,0,0.5);border:1px solid #0a2040;'
-                        f'padding:10px;border-radius:2px;max-height:180px;overflow-y:auto;">{html}</div>',
-                        unsafe_allow_html=True)
+                lv2 = log.get("level", "OK")
+                c2  = "#ff3366" if lv2 == "RISK" else "#ff6b35" if lv2 == "WARN" else "#00ff88"
+                html += (
+                    f'<div style="font-family:Share Tech Mono,monospace;font-size:0.63rem;'
+                    f'color:{c2};margin:2px 0;">[{lv2}] {log["msg"]}</div>'
+                )
+            st.markdown(
+                f'<div style="background:rgba(0,0,0,0.5);border:1px solid #0a2040;'
+                f'padding:10px;border-radius:2px;max-height:180px;overflow-y:auto;">{html}</div>',
+                unsafe_allow_html=True,
+            )
 
 
 def _sierpinski():
@@ -221,14 +238,14 @@ def _sierpinski():
     const s=document.getElementById('sc');
     const c=s.getContext('2d');
     c.fillStyle='#020408';c.fillRect(0,0,s.width,s.height);
-    function t(x,y,sz,d){{
-      if(d===0||sz<2){{
+    function t(x,y,sz,d){
+      if(d===0||sz<2){
         c.beginPath();c.moveTo(x,y-sz);
         c.lineTo(x-sz*.866,y+sz*.5);c.lineTo(x+sz*.866,y+sz*.5);c.closePath();
-        c.fillStyle=`rgba(0,212,255,${{.12+d*.04}})`;c.fill();
+        c.fillStyle=`rgba(0,212,255,${.12+d*.04})`;c.fill();
         c.strokeStyle='rgba(0,212,255,.35)';c.lineWidth=.5;c.stroke();return;
-      }}
+      }
       t(x,y-sz/2,sz/2,d-1);t(x-sz*.433,y+sz*.25,sz/2,d-1);t(x+sz*.433,y+sz*.25,sz/2,d-1);
-    }}
+    }
     for(let i=0;i<5;i++) t(66+i*132,78,50,4);
     </script>""", height=100)
